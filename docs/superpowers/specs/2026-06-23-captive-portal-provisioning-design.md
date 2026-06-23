@@ -14,6 +14,15 @@ Implement a captive portal that:
 4. Generates a unique device ID using the format: `{device_name}-{MAC_ADDRESS}`
 5. Constructs MQTT topics using the device ID as the first level: `{device_id}/{sensor_type}`
 
+## Required Libraries
+This implementation requires the following additional library:
+- **WiFiManager** by tzapu and tablatronix (https://github.com/tzapu/WiFiManager/wiki) - For captive portal functionality
+  - Compatible with ESP32 Arduino core
+  - Supports custom parameters (MQTT broker, port, credentials, device name)
+  - Works with ESP32 Preferences (NVS) for credential storage
+  - Memory footprint: Approximately 50-60KB flash, minimal RAM impact
+  - Recommended version: Latest stable release (v2.0.11 or higher as of 2026)
+
 ## Detailed Design
 
 ### Architecture Overview
