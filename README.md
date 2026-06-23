@@ -6,7 +6,7 @@
 [![Arduino](https://img.shields.io/badge/Arduino-Compatible-green)](https://www.arduino.cc/)
 [![ESP32](https://img.shields.io/badge/ESP32-Supported-blue)](https://www.espressif.com/)
 
-**Real-time environmental monitoring with ESP32 — measures temperature, humidity, pressure, VOCs, and CO₂. Logs to SD card. Integrates with MQTT & Home Assistant.**
+**Real-time environmental monitoring with ESP32 - measures temperature, humidity, pressure, VOCs, and CO₂. Logs to SD card. Integrates with MQTT & Home Assistant.**
 
 [⭐ If this project helps you, please star it!](#)  
 [💝 Support ongoing development](#-support-this-project)
@@ -28,12 +28,12 @@
 
 ## 📊 What You Can Monitor
 
-- **Temperature** (°C) — BME280
-- **Humidity** (%) — BME280
-- **Barometric Pressure** (hPa) — BME280
-- **VOCs** (ppb) — CCS811 (air quality indicator)
-- **CO₂ equivalent** (ppm) — CCS811
-- **Timestamps** — All data entries include precise timestamps
+- **Temperature** (°C) - BME280
+- **Humidity** (%) - BME280
+- **Barometric Pressure** (hPa) - BME280
+- **VOCs** (ppb) - CCS811 (air quality indicator)
+- **CO₂ equivalent** (ppm) - CCS811
+- **Timestamps** - All data entries include precise timestamps
 
 Perfect for: home air quality, greenhouses, labs, server rooms, weather stations, environmental research.
 
@@ -76,8 +76,8 @@ See [COMPLETE_USER_GUIDE.md](COMPLETE_USER_GUIDE.md) for detailed diagrams.
 ## 📝 Quick Start
 
 ### 1. Install Arduino IDE / PlatformIO
-- [Arduino IDE](https://www.arduino.cc/en/software) — beginner-friendly
-- [VS Code + PlatformIO](https://platformio.org/) — advanced
+- [Arduino IDE](https://www.arduino.cc/en/software) - beginner-friendly
+- [VS Code + PlatformIO](https://platformio.org/) - advanced
 
 ### 2. Add ESP32 Board Support
 In Arduino IDE:
@@ -123,7 +123,7 @@ envlogger/eco2         → 450
 envlogger/status       → ok
 ```
 
-**Home Assistant integration** — automatically discovers via MQTT Discovery!
+**Home Assistant integration** - automatically discovers via MQTT Discovery!
 
 ## 💾 Data Logging
 
@@ -145,12 +145,12 @@ timestamp,temperature_C,humidity_%,pressure_hPa,TVOC_ppb,eCO2_ppm
 
 ## 🎯 Use Cases
 
-- 🏠 **Home Air Quality Monitor** — Track VOCs while cooking, cleaning, burning candles
-- 🌱 **Greenhouse** — Monitor growing conditions, log to SD, trigger automations
-- 🔬 **Lab/Workspace** — Continuous logging for environmental studies
-- 🖥️ **Server Room** — Alert on temperature/humidity extremes
-- 🌦️ **Weather Station** — Pressure trending for weather prediction
-- 🔋 **Remote Sensing** — Solar-powered deployment for field research
+- 🏠 **Home Air Quality Monitor** - Track VOCs while cooking, cleaning, burning candles
+- 🌱 **Greenhouse** - Monitor growing conditions, log to SD, trigger automations
+- 🔬 **Lab/Workspace** - Continuous logging for environmental studies
+- 🖥️ **Server Room** - Alert on temperature/humidity extremes
+- 🌦️ **Weather Station** - Pressure trending for weather prediction
+- 🔋 **Remote Sensing** - Solar-powered deployment for field research
 
 ## 🔧 Customization
 
@@ -177,11 +177,11 @@ See [COMPLETE_USER_GUIDE.md](COMPLETE_USER_GUIDE.md) for advanced customization.
 
 ## 📚 Documentation
 
-- **[README.md](README.md)** — This file
-- **[COMPLETE_USER_GUIDE.md](COMPLETE_USER_GUIDE.md)** — Detailed setup, troubleshooting, advanced config
-- **[USER_GUIDE.md](USER_GUIDE.md)** — Quick reference
-- **[config.example.h](config.example.h)** — Configuration template
-- **[CONTRIBUTING.md](CONTRIBUTING.md)** — How to contribute
+- **[README.md](README.md)** - This file
+- **[COMPLETE_USER_GUIDE.md](COMPLETE_USER_GUIDE.md)** - Detailed setup, troubleshooting, advanced config
+- **[USER_GUIDE.md](USER_GUIDE.md)** - Quick reference
+- **[config.example.h](config.example.h)** - Configuration template
+- **[CONTRIBUTING.md](CONTRIBUTING.md)** - How to contribute
 
 ## 🤝 Contributing
 
@@ -216,11 +216,11 @@ If this project saves you time or money, please consider supporting continued de
 - 🎁 **Ko-fi** (if payment method works in your region)
 
 ### Other Ways to Help
-- ⭐ **Star this repo** — Helps discovery and shows support
-- 🔄 **Share** — Tell colleagues, friends, online communities
-- 🐛 **Report bugs** — Issues help make this better
-- 🔧 **Contribute** — Code, docs, examples, translations
-- 💬 **Feedback** — What features would help you?
+- ⭐ **Star this repo** - Helps discovery and shows support
+- 🔄 **Share** - Tell colleagues, friends, online communities
+- 🐛 **Report bugs** - Issues help make this better
+- 🔧 **Contribute** - Code, docs, examples, translations
+- 💬 **Feedback** - What features would help you?
 
 Even small support makes a big difference! Thank you 🙏
 
@@ -228,7 +228,7 @@ Even small support makes a big difference! Thank you 🙏
 
 ## 📄 License
 
-This project is licensed under the MIT License — see [LICENSE](LICENSE) file.
+This project is licensed under the MIT License - see [LICENSE](LICENSE) file.
 
 ## ⚠️ Disclaimer
 
