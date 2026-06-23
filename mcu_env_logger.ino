@@ -50,7 +50,14 @@ bool wifiConnected = false;
 bool mqttConnected = false;
 bool sdInitialized = false;
 bool sensorsInitialized = false;
-
+// Device ID and topic functions
+String getDeviceId();
+String getTemperatureTopic();
+String getHumidityTopic();
+String getPressureTopic();
+String getTvocTopic();
+String getEco2Topic();
+String getStatusTopic;
 // Forward declarations
 bool initializeSensors();
 bool initializeSD();
@@ -89,6 +96,10 @@ void setup()
     // Initialize Preferences
     preferences.begin("env_logger", false);
     preferences.end();
+
+    // Print device ID for debugging
+    String deviceID = getDeviceId();
+    Serial.printf("Device ID: %s\n", deviceID.c_str());
 
     // Initialize components
     Serial.println("Initializing sensors...");
@@ -426,34 +437,15 @@ void logToSD(float temp, float hum, float pres, uint16_t tvoc, uint16_t eco2)
 
 void publishMQTT(float temp, float hum, float pres, uint16_t tvoc, uint16_t eco2)
 {
-    // Generate device ID for MQTT topics
-    char deviceId[50] = {0};
-    char deviceName[32] = "env_logger";
-    loadDeviceName(deviceName, sizeof(deviceName));
-
-    uint8_t mac[6];
-    WiFi.macAddress(mac);
-    char macStr[18];
-    sprintf(macStr, "%02X:%02X:%02X:%02X:%02X:%02X",
-            mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
-    snprintf(deviceId, sizeof(deviceId), "%s-%s", deviceName, macStr);
-
     // Publish individual sensor readings
-    String tempTopic = String(deviceId) + "/temperature";
-    String humTopic = String(deviceId) + "/humidity";
-    String presTopic = String(deviceId) + "/pressure";
-    String tvocTopic = String(deviceId) + "/tvoc";
-    String eco2Topic = String(deviceId) + "/eco2";
-    String statusTopic = String(deviceId) + "/status";
-
-    mqttClient.publish(tempTopic.c_str(), String(temp).c_str(), true);
-    mqttClient.publish(humTopic.c_str(), String(hum).c_str(), true);
-    mqttClient.publish(presTopic.c_str(), String(pres).c_str(), true);
-    mqttClient.publish(tvocTopic.c_str(), String(tvoc).c_str(), true);
-    mqttClient.publish(eco2Topic.c_str(), String(eco2).c_str(), true);
+    mqttClient.publish(getTemperatureTopic().c_str(), String(temp).c_str(), true);
+    mqttClient.publish(getHumidityTopic().c_str(), String(hum).c_str(), true);
+    mqttClient.publish(getPressureTopic().c_str(), String(pres).c_str(), true);
+    mqttClient.publish(getTvocTopic().c_str(), String(tvoc).c_str(), true);
+    mqttClient.publish(getEco2Topic().c_str(), String(eco2).c_str(), true);
 
     // Publish status
-    mqttClient.publish(statusTopic.c_str(), "ok", true);
+    mqttClient.publish(getStatusTopic().c_str(), "ok", true);
 
     Serial.println("Data published to MQTT");
 }
@@ -643,4 +635,49 @@ bool clearCredentials() {
     preferences.end();
     Serial.println("All credentials cleared from Preferences");
     return true;
+}
+
+// Device ID generation functions
+String getDeviceId() {
+    char deviceName[32] = "env_logger";
+    loadDeviceName(deviceName, sizeof(deviceName));
+    uint8_t mac[6];
+    WiFi.macAddress(mac);
+    char macStr[18];
+    sprintf(macStr, "%02X:%02X:%02X:%02X:%02X:%02X",
+            mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+    return String(deviceName) + "-" + String(macStr);
+}
+
+// Helper function for MAC address formatting (used by getDeviceId)
+String formatMacAddress(uint8_t* mac) {
+    char macStr[18];
+    sprintf(macStr, "%02X:%02X:%02X:%02X:%02X:%02X",
+            mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+    return String(macStr);
+}
+
+// MQTT topic generation functions
+String getTemperatureTopic() {
+    return getDeviceId() + "/temperature";
+}
+
+String getHumidityTopic() {
+    return getDeviceId() + "/humidity";
+}
+
+String getPressureTopic() {
+    return getDeviceId() + "/pressure";
+}
+
+String getTvocTopic() {
+    return getDeviceId() + "/tvoc";
+}
+
+String getEco2Topic() {
+    return getDeviceId() + "/eco2";
+}
+
+String getStatusTopic() {
+    return getDeviceId() + "/status";
 }

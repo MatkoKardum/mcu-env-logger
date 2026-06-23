@@ -16,16 +16,16 @@
 - [x] Step 6: Commit preferences management functions to file
 
 ### Task 3: Implement Device ID Generation
-- [ ] Step 1: Implement getDeviceId() function
-- [ ] Step 2: Add helper functions for MAC address formatting
-- [ ] Step 3: Implement MQTT topic generation functions
-- [ ] Step 4: Add serial output for debugging device ID generation
+- [x] Step 1: Implement getDeviceId() function
+- [x] Step 2: Add helper functions for MAC address formatting
+- [x] Step 3: Implement MQTT topic generation functions
+- [x] Step 4: Add serial output for debugging device ID generation
 - [ ] Step 5: Test device ID generation
 - [ ] Step 6: Commit device ID implementation
 
 ### Task 4: Modify Connection Functions to Use Preferences
-- [ ] Step 1: Update connectWiFi() function
-- [ ] Step 2: Update connectMQTT() function
+- [x] Step 1: Update connectWiFi() function
+- [x] Step 2: Update connectMQTT() function
 - [ ] Step 3: Add credential validation functions
 - [ ] Step 4: Test connection functions with stored credentials
 - [ ] Step 5: Commit connection function updates

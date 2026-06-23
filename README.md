@@ -20,6 +20,9 @@
 - **Multi-sensor monitoring**: BME280 (temp/humidity/pressure) + CCS811 (VOC/CO₂)
 - **Local data logging**: CSV to microSD card (no cloud dependency, works offline)
 - **Wireless integration**: WiFi + MQTT for real-time data to Home Assistant, Node-RED, etc.
+- **Captive portal provisioning**: Easy WiFi/MQTT configuration via web interface (no code changes needed)
+- **Unique device identification**: Automatic device ID generation from name + MAC address for MQTT topics
+- **Persistent storage**: Credentials saved to ESP32 NVS for automatic reconnection
 - **Power efficient**: Deep sleep between measurements (~15µA), 1.5+ years on battery
 - **OTA updates**: Wireless firmware updates without physical access
 - **Extensible**: Easily add more sensors with modular code
@@ -95,19 +98,24 @@ Sketch → Include Library → Manage Libraries (search and install):
 - `Adafruit NeoPixel` (optional, for LED)
 
 ### 4. Configure & Upload
-```bash
+```
 # Clone this repo or download as ZIP
 git clone https://github.com/MatkoKardum/mcu-env-logger.git
 cd mcu-env-logger
 
-# Copy config template
-cp config.example.h config.h
-
+# OPTIONAL: For advanced configuration, copy config template
+# (Not required for initial setup - use captive portal instead)
+# cp config.example.h config.h
 # Edit config.h with your WiFi, MQTT, GPIO pins
-nano config.h
+# nano config.h
 
 # Upload: Select Board → Port → Upload
 ```
+
+**First Boot**: Device automatically starts in captive portal mode for easy configuration
+- Connect to WiFi AP: `ESP_DeviceName_XXXXXX` (shown in serial monitor)
+- Visit http://192.168.4.1 in browser to configure WiFi and MQTT settings
+- Settings saved permanently to device - no need to reconfigure unless changing networks
 
 See [COMPLETE_USER_GUIDE.md](COMPLETE_USER_GUIDE.md) for full setup guide.
 
@@ -115,13 +123,22 @@ See [COMPLETE_USER_GUIDE.md](COMPLETE_USER_GUIDE.md) for full setup guide.
 
 If MQTT enabled, device publishes to:
 ```
-envlogger/temperature  → 23.5
-envlogger/humidity     → 45.2
-envlogger/pressure     → 1013.2
-envlogger/tvoc         → 150
-envlogger/eco2         → 450
-envlogger/status       → ok
+<DEVICE_ID>/temperature  → 23.5
+<DEVICE_ID>/humidity     → 45.2
+<DEVICE_ID>/pressure     → 1013.2
+<DEVICE_ID>/tvoc         → 150
+<DEVICE_ID>/eco2         → 450
+<DEVICE_ID>/status       → ok
 ```
+
+Where `<DEVICE_ID>` is formatted as `{device_name}-{MAC_ADDRESS}` (e.g., `env_logger-DE:AD:BE:EF:12:34`)
+
+**Device Configuration**: 
+- First boot: Device starts in captive portal mode for WiFi/MQTT configuration
+- Connect to WiFi AP: `ESP_DeviceName_XXXXXX` (last 3 bytes of MAC)
+- Visit http://192.168.4.1 in browser to configure credentials
+- Settings saved to ESP32 Persistent Storage (NVS) for future use
+- Subsequent boots: Connect automatically using saved credentials
 
 **Home Assistant integration** - automatically discovers via MQTT Discovery!
 
