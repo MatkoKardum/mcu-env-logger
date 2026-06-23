@@ -1,0 +1,37 @@
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Build artifacts
+build/
+*.o
+*.a
+*.so
+*.elf
+
+# Arduino
+*.elf.map
+
+# Secrets (DO NOT commit these)
+config.h
+secrets.h
+credentials.txt
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.bak
+*~
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Node modules (if using any Node tools)
+node_modules/
