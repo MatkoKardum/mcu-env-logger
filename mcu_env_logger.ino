@@ -18,6 +18,7 @@
 #include <WiFi.h>
 #include <PubSubClient.h>
 #include <ArduinoOTA.h>
+#include <Preferences.h>
 #include "config.h"
 
 // Optional: Status LED (uncomment if using)
@@ -25,6 +26,9 @@
 // #define STATUS_LED_PIN    27
 // #define STATUS_LED_COUNT  1
 // Adafruit_NeoPixel statusLED(STATUS_LED_COUNT, STATUS_LED_PIN, NEO_GRB + NEO_KHZ800);
+
+// Preferences object for NVS storage
+Preferences preferences;
 
 // Sensor objects
 Adafruit_BME280 bme;
@@ -58,6 +62,17 @@ void publishMQTT(float temp, float hum, float pres, uint16_t tvoc, uint16_t eco2
 void handleOTA();
 void setStatusLED(uint32_t color); // Uncomment if using LED
 
+// Preferences management functions
+bool loadWiFiCredentials(char* ssid, size_t ssidSize, char* password, size_t passSize);
+bool loadMQTTCredentials(char* broker, size_t brokerSize, uint16_t* port,
+                        char* user, size_t userSize, char* password, size_t passSize);
+bool loadDeviceName(char* name, size_t nameSize);
+bool saveWiFiCredentials(const char* ssid, const char* password);
+bool saveMQTTCredentials(const char* broker, uint16_t port,
+                        const char* user, const char* password);
+bool saveDeviceName(const char* name);
+bool clearCredentials();
+
 void setup()
 {
     Serial.begin(115200);
@@ -70,6 +85,10 @@ void setup()
     // statusLED.begin();
     // statusLED.show(); // Initialize all pixels to 'off'
     // setStatusLED(0xFF0000); // Red = initializing
+
+    // Initialize Preferences
+    preferences.begin("env_logger", false);
+    preferences.end();
 
     // Initialize components
     Serial.println("Initializing sensors...");
@@ -88,20 +107,20 @@ void setup()
 
         // Setup OTA updates
         ArduinoOTA.setHostname(DEVICE_HOSTNAME);
-        ArduinoOTA.onStart([]()
-                           { Serial.println("OTA Start"); });
-        ArduinoOTA.onEnd([]()
-                         { Serial.println("\nOTA End"); });
+        ArduinoOTA.onStart([])
+                           { Serial.println("OTA Start"); };
+        ArduinoOTA.onEnd([])
+                         { Serial.println("\nOTA End"); };
         ArduinoOTA.onProgress([](unsigned int progress, unsigned int total)
                               { Serial.printf("OTA Progress: %u%%\r", (progress * 100) / total); });
         ArduinoOTA.onError([](ota_error_t error)
                            {
-      Serial.printf("OTA Error[%u]: ", error);
-      if (error == OTA_AUTH_ERROR) Serial.println("Auth Failed");
-      else if (error == OTA_BEGIN_ERROR) Serial.println("Begin Failed");
-      else if (error == OTA_CONNECT_ERROR) Serial.println("Connect Failed");
-      else if (error == OTA_RECEIVE_ERROR) Serial.println("Receive Failed");
-      else if (error == OTA_END_ERROR) Serial.println("End Failed"); });
+        Serial.printf("OTA Error[%u]: ", error);
+        if (error == OTA_AUTH_ERROR) Serial.println("Auth Failed");
+        else if (error == OTA_BEGIN_ERROR) Serial.println("Begin Failed");
+        else if (error == OTA_CONNECT_ERROR) Serial.println("Connect Failed");
+        else if (error == OTA_RECEIVE_ERROR) Serial.println("Receive Failed");
+        else if (error == OTA_END_ERROR) Serial.println("End Failed"); });
         ArduinoOTA.begin();
         Serial.println("OTA updates enabled");
     }
@@ -218,10 +237,25 @@ bool initializeSD()
 
 bool connectWiFi()
 {
-    WiFi.mode(WIFI_STA);
-    WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+    // Try to load WiFi credentials from Preferences first
+    char ssid[32] = {0};
+    char password[64] = {0};
 
-    Serial.print("Connecting to WiFi");
+    bool useSavedCredentials = loadWiFiCredentials(ssid, sizeof(ssid), password, sizeof(password));
+
+    if (useSavedCredentials) {
+        WiFi.mode(WIFI_STA);
+        WiFi.begin(ssid, password);
+        Serial.print("Connecting to WiFi (from Preferences): ");
+        Serial.println(ssid);
+    } else {
+        // Fallback to hardcoded credentials from config.h
+        WiFi.mode(WIFI_STA);
+        WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+        Serial.print("Connecting to WiFi (from config.h): ");
+        Serial.println(WIFI_SSID);
+    }
+
     unsigned long startAttemptTime = millis();
 
     while (WiFi.status() != WL_CONNECTED && millis() - startAttemptTime < WIFI_TIMEOUT_MS)
@@ -248,7 +282,30 @@ bool connectWiFi()
 
 bool connectMQTT()
 {
-    mqttClient.setServer(MQTT_BROKER, MQTT_PORT);
+    // Try to load MQTT credentials from Preferences first
+    char broker[64] = {0};
+    char user[32] = {0};
+    char pass[32] = {0};
+    uint16_t port = 1883;
+
+    bool useSavedCredentials = loadMQTTCredentials(broker, sizeof(broker), &port,
+                                                  user, sizeof(user), pass, sizeof(pass));
+
+    if (useSavedCredentials) {
+        mqttClient.setServer(broker, port);
+        Serial.print("Connecting to MQTT broker (from Preferences): ");
+        Serial.print(broker);
+        Serial.print(":");
+        Serial.println(port);
+    } else {
+        // Fallback to hardcoded credentials from config.h
+        mqttClient.setServer(MQTT_BROKER, MQTT_PORT);
+        Serial.print("Connecting to MQTT broker (from config.h): ");
+        Serial.print(MQTT_BROKER);
+        Serial.print(":");
+        Serial.println(MQTT_PORT);
+    }
+
     mqttClient.setCallback([](char *topic, byte *payload, unsigned int length)
                            {
     // Handle incoming MQTT messages if needed
@@ -260,12 +317,16 @@ bool connectMQTT()
     }
     Serial.println(); });
 
-    Serial.print("Connecting to MQTT broker ");
-    Serial.print(MQTT_BROKER);
-    Serial.print(":");
-    Serial.println(MQTT_PORT);
+    String clientId = DEVICE_HOSTNAME;
+    // Try to get device name for MQTT client ID
+    char deviceName[32] = {0};
+    if (loadDeviceName(deviceName, sizeof(deviceName))) {
+        clientId = String(deviceName);
+    }
 
-    if (mqttClient.connect(DEVICE_HOSTNAME, MQTT_USER, MQTT_PASSWORD))
+    if (mqttClient.connect(clientId.c_str(),
+                          useSavedCredentials ? user : MQTT_USER,
+                          useSavedCredentials ? pass : MQTT_PASSWORD))
     {
         Serial.println("MQTT connected");
         // setStatusLED(0x00FF00); // Green = MQTT connected (if using LED)
@@ -365,15 +426,34 @@ void logToSD(float temp, float hum, float pres, uint16_t tvoc, uint16_t eco2)
 
 void publishMQTT(float temp, float hum, float pres, uint16_t tvoc, uint16_t eco2)
 {
+    // Generate device ID for MQTT topics
+    char deviceId[50] = {0};
+    char deviceName[32] = "env_logger";
+    loadDeviceName(deviceName, sizeof(deviceName));
+
+    uint8_t mac[6];
+    WiFi.macAddress(mac);
+    char macStr[18];
+    sprintf(macStr, "%02X:%02X:%02X:%02X:%02X:%02X",
+            mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+    snprintf(deviceId, sizeof(deviceId), "%s-%s", deviceName, macStr);
+
     // Publish individual sensor readings
-    mqttClient.publish(MQTT_TOPIC_TEMPERATURE, String(temp).c_str(), true);
-    mqttClient.publish(MQTT_TOPIC_HUMIDITY, String(hum).c_str(), true);
-    mqttClient.publish(MQTT_TOPIC_PRESSURE, String(pres).c_str(), true);
-    mqttClient.publish(MQTT_TOPIC_TVOC, String(tvoc).c_str(), true);
-    mqttClient.publish(MQTT_TOPIC_ECO2, String(eco2).c_str(), true);
+    String tempTopic = String(deviceId) + "/temperature";
+    String humTopic = String(deviceId) + "/humidity";
+    String presTopic = String(deviceId) + "/pressure";
+    String tvocTopic = String(deviceId) + "/tvoc";
+    String eco2Topic = String(deviceId) + "/eco2";
+    String statusTopic = String(deviceId) + "/status";
+
+    mqttClient.publish(tempTopic.c_str(), String(temp).c_str(), true);
+    mqttClient.publish(humTopic.c_str(), String(hum).c_str(), true);
+    mqttClient.publish(presTopic.c_str(), String(pres).c_str(), true);
+    mqttClient.publish(tvocTopic.c_str(), String(tvoc).c_str(), true);
+    mqttClient.publish(eco2Topic.c_str(), String(eco2).c_str(), true);
 
     // Publish status
-    mqttClient.publish(MQTT_TOPIC_STATUS, "ok", true);
+    mqttClient.publish(statusTopic.c_str(), "ok", true);
 
     Serial.println("Data published to MQTT");
 }
@@ -389,3 +469,178 @@ void handleOTA()
 //   statusLED.show();
 // #endif
 // }
+
+// Preferences management functions
+bool loadWiFiCredentials(char* ssid, size_t ssidSize, char* password, size_t passSize) {
+    preferences.begin("env_logger", false);
+    bool success = false;
+
+    // Read WiFi SSID
+    String storedSsid = preferences.getString("wifi_ssid", "");
+    if (storedSsid.length() > 0 && storedSsid.length() < ssidSize) {
+        storedSsid.toCharArray(ssid, ssidSize);
+
+        // Read WiFi password
+        String storedPass = preferences.getString("wifi_pass", "");
+        if (storedPass.length() < passSize) {
+            storedPass.toCharArray(password, passSize);
+            success = true;
+            Serial.println("WiFi credentials loaded from Preferences");
+        } else {
+            Serial.println("WiFi password buffer too small");
+        }
+    } else {
+        Serial.println("No WiFi SSID found in Preferences or buffer too small");
+    }
+
+    preferences.end();
+    return success;
+}
+
+bool loadMQTTCredentials(char* broker, size_t brokerSize, uint16_t* port,
+                        char* user, size_t userSize, char* password, size_t passSize) {
+    preferences.begin("env_logger", false);
+    bool success = false;
+
+    // Read MQTT broker
+    String storedBroker = preferences.getString("mqtt_broker", "");
+    if (storedBroker.length() > 0 && storedBroker.length() < brokerSize) {
+        storedBroker.toCharArray(broker, brokerSize);
+
+        // Read MQTT port
+        *port = preferences.getUShort("mqtt_port", 1883);
+
+        // Read MQTT username
+        String storedUser = preferences.getString("mqtt_user", "");
+        if (storedUser.length() < userSize) {
+            storedUser.toCharArray(user, userSize);
+
+            // Read MQTT password
+            String storedPass = preferences.getString("mqtt_pass", "");
+            if (storedPass.length() < passSize) {
+                storedPass.toCharArray(password, passSize);
+                success = true;
+                Serial.println("MQTT credentials loaded from Preferences");
+            } else {
+                Serial.println("MQTT password buffer too small");
+            }
+        } else {
+            Serial.println("MQTT username buffer too small");
+        }
+    } else {
+        Serial.println("No MQTT broker found in Preferences or buffer too small");
+    }
+
+    preferences.end();
+    return success;
+}
+
+bool loadDeviceName(char* name, size_t nameSize) {
+    preferences.begin("env_logger", false);
+    bool success = false;
+
+    String storedName = preferences.getString("device_name", "env_logger");
+    if (storedName.length() < nameSize) {
+        storedName.toCharArray(name, nameSize);
+        success = true;
+        Serial.printf("Device name loaded from Preferences: %s\n", name);
+    } else {
+        Serial.println("Device name buffer too small");
+        // Use default
+        String defaultName = "env_logger";
+        if (defaultName.length() < nameSize) {
+            defaultName.toCharArray(name, nameSize);
+            success = true;
+        }
+    }
+
+    preferences.end();
+    return success;
+}
+
+bool saveWiFiCredentials(const char* ssid, const char* password) {
+    preferences.begin("env_logger", false);
+
+    // Validate inputs
+    if (strlen(ssid) == 0 || strlen(ssid) > 32) {
+        Serial.println("Invalid WiFi SSID length");
+        preferences.end();
+        return false;
+    }
+
+    if (strlen(password) > 63) {
+        Serial.println("Invalid WiFi password length");
+        preferences.end();
+        return false;
+    }
+
+    // Save credentials
+    preferences.putString("wifi_ssid", ssid);
+    preferences.putString("wifi_pass", password);
+
+    Serial.println("WiFi credentials saved to Preferences");
+    preferences.end();
+    return true;
+}
+
+bool saveMQTTCredentials(const char* broker, uint16_t port,
+                        const char* user, const char* password) {
+    preferences.begin("env_logger", false);
+
+    // Validate inputs
+    if (strlen(broker) == 0) {
+        Serial.println("Invalid MQTT broker");
+        preferences.end();
+        return false;
+    }
+
+    // Save credentials
+    preferences.putString("mqtt_broker", broker);
+    preferences.putUShort("mqtt_port", port);
+    preferences.putString("mqtt_user", user);
+    preferences.putString("mqtt_pass", password);
+
+    Serial.println("MQTT credentials saved to Preferences");
+    preferences.end();
+    return true;
+}
+
+bool saveDeviceName(const char* name) {
+    preferences.begin("env_logger", false);
+
+    // Validate input
+    if (strlen(name) == 0) {
+        name = "env_logger";
+    }
+
+    // Sanitize for MQTT topic validity (remove invalid characters)
+    String cleanName = "";
+    for (uint8_t i = 0; i < strlen(name); i++) {
+        char c = name[i];
+        // Allow alphanumeric, hyphen, underscore, dot (valid for MQTT topics)
+        if (isalnum(c) || c == '-' || c == '_' || c == '.') {
+            cleanName += c;
+        } else {
+            // Replace invalid chars with underscore
+            cleanName += '_';
+        }
+    }
+
+    // Ensure not empty after sanitization
+    if (cleanName.length() == 0) {
+        cleanName = "env_logger";
+    }
+
+    preferences.putString("device_name", cleanName.c_str());
+    Serial.printf("Device name saved to Preferences: %s\n", cleanName.c_str());
+    preferences.end();
+    return true;
+}
+
+bool clearCredentials() {
+    preferences.begin("env_logger", false);
+    preferences.clear();
+    preferences.end();
+    Serial.println("All credentials cleared from Preferences");
+    return true;
+}

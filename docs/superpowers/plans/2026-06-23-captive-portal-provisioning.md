@@ -58,31 +58,31 @@
 - Consumes: None
 - Produces: Functions to read/write WiFi/MQTT credentials and device name to Preferences
 
-- [ ] **Step 1: Add required includes for Preferences**
+- [x] **Step 1: Add required includes for Preferences**
   - Add `#include <Preferences.h>` to mcu_env_logger.ino
   - Create global Preferences object
 
-- [ ] **Step 2: Implement credentials loading functions**
+- [x] **Step 2: Implement credentials loading functions**
   - Create `loadWiFiCredentials()` function
   - Create `loadMQTTCredentials()` function
   - Create `loadDeviceName()` function with default "env_logger"
   - Functions should return boolean success/failure
 
-- [ ] **Step 3: Implement credentials saving functions**
+- [x] **Step 3: Implement credentials saving functions**
   - Create `saveWiFiCredentials()` function
   - Create `saveMQTTCredentials()` function
   - Create `saveDeviceName()` function
   - Functions should commit changes to Preferences
 
-- [ ] **Step 4: Implement credential clearing functions**
+- [x] **Step 4: Implement credential clearing functions**
   - Create `clearCredentials()` function for factory reset
   - Clear all stored credentials and device name
 
-- [ ] **Step 5: Test preferences functions with serial output**
+- [x] **Step 5: Test preferences functions with serial output**
   - Add temporary test code to verify read/write works
   - Remove test code after verification
 
-- [ ] **Step 6: Commit preferences management functions to file**
+- [x] **Step 6: Commit preferences management functions to file**
   - Commit the added preferences management code
 
 ### Task 3: Implement Device ID Generation
