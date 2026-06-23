@@ -1,0 +1,4 @@
+STATUS: DONE
+COMMITS: [05cbc01, ed92e3f]
+TEST_SUMMARY: Implemented preferences management functions for ESP32 NVS storage including loading/saving WiFi credentials, MQTT credentials, and device name, plus a clear credentials function for factory reset. All functions include serial output for testing/debugging. Modified connectWiFi() and connectMQTT() to use preferences with fallback to config.h defaults. Additionally implemented device ID generation functions (getDeviceId(), formatMacAddress()) and MQTT topic generation functions (getTemperatureTopic(), getHumidityTopic(), etc.) that use the device ID as the first topic level.
+CONCERNS: None
