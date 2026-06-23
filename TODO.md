@@ -20,7 +20,7 @@
 - [x] Step 2: Add helper functions for MAC address formatting
 - [x] Step 3: Implement MQTT topic generation functions
 - [x] Step 4: Add serial output for debugging device ID generation
-- [ ] Step 5: Test device ID generation
+- [x] Step 5: Test device ID generation
 - [ ] Step 6: Commit device ID implementation
 
 ### Task 4: Modify Connection Functions to Use Preferences
@@ -42,7 +42,7 @@
 
 ### Task 6: Update MQTT Topic Usage Throughout Code
 - [ ] Step 1: Update MQTT client ID
-- [ ] Step 2: Update publishMQTT() function
+- [x] Step 2: Update publishMQTT() function
 - [ ] Step 3: Update any MQTT subscriptions (if applicable)
 - [ ] Step 4: Update MQTT connection logic
 - [ ] Step 5: Test MQTT communication with dynamic topics
