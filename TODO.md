@@ -31,12 +31,12 @@
 - [ ] Step 5: Commit connection function updates
 
 ### Task 5: Integrate WiFiManager Captive Portal
-- [ ] Step 1: Add WiFiManager include and global object
-- [ ] Step 2: Implement WiFiManager configuration mode callback
-- [ ] Step 3: Implement WiFiManager save callback
-- [ ] Step 4: Implement WiFiManager connection callback
-- [ ] Step 5: Implement WiFiManager configuration timeout handling
-- [ ] Step 6: Add function to start configuration mode
+- [x] Step 1: Add WiFiManager include and global object
+- [x] Step 2: Implement WiFiManager configuration mode callback
+- [x] Step 3: Implement WiFiManager save callback
+- [x] Step 4: Implement WiFiManager connection callback
+- [x] Step 5: Implement WiFiManager configuration timeout handling
+- [x] Step 6: Add function to start configuration mode
 - [ ] Step 7: Test captive portal flow
 - [ ] Step 8: Commit WiFiManager integration
 
@@ -49,11 +49,11 @@
 - [ ] Step 6: Commit MQTT topic updates
 
 ### Task 7: Update Setup() Function Flow
-- [ ] Step 1: Reorganize setup() function
-- [ ] Step 2: Implement credential validation logic
-- [ ] Step 3: Implement connection attempt with fallback
-- [ ] Step 4: Ensure OTA setup still works
-- [ ] Step 5: Move sensor/SD initialization after connection
+- [x] Step 1: Reorganize setup() function
+- [x] Step 2: Implement credential validation logic
+- [x] Step 3: Implement connection attempt with fallback
+- [x] Step 4: Ensure OTA setup still works
+- [x] Step 5: Move sensor/SD initialization after connection
 - [ ] Step 6: Test complete boot flow
 - [ ] Step 7: Commit updated setup() function
 

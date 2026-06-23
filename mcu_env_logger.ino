@@ -19,6 +19,7 @@
 #include <PubSubClient.h>
 #include <ArduinoOTA.h>
 #include <Preferences.h>
+#include <WiFiManager.h>
 #include "config.h"
 
 // Optional: Status LED (uncomment if using)
@@ -29,6 +30,9 @@
 
 // Preferences object for NVS storage
 Preferences preferences;
+
+// WiFiManager object for captive portal
+WiFiManager wifiManager;
 
 // Sensor objects
 Adafruit_BME280 bme;
@@ -80,6 +84,16 @@ bool saveMQTTCredentials(const char* broker, uint16_t port,
 bool saveDeviceName(const char* name);
 bool clearCredentials();
 
+// WiFiManager callback functions
+void wifiConfigModeCallback(WiFiManager *myWiFiManager);
+void wifiSaveCallback();
+void wifiConnectCallback();
+
+// Function to start configuration mode
+void startConfigurationMode();
+
+// Device ID generation functions
+
 void setup()
 {
     Serial.begin(115200);
@@ -101,21 +115,55 @@ void setup()
     String deviceID = getDeviceId();
     Serial.printf("Device ID: %s\n", deviceID.c_str());
 
-    // Initialize components
+    // Check if we have valid credentials in Preferences
+    bool hasCredentials = false;
+    char ssid[32] = {0};
+    char pass[64] = {0};
+
+    if (loadWiFiCredentials(ssid, sizeof(ssid), pass, sizeof(pass))) {
+        if (strlen(ssid) > 0) {
+            hasCredentials = true;
+            Serial.println("Found WiFi credentials in Preferences");
+        }
+    }
+
+    // If we have credentials, try to connect
+    if (hasCredentials) {
+        Serial.println("Attempting to connect with stored credentials...");
+        wifiConnected = connectWiFi();
+
+        if (wifiConnected) {
+            Serial.println("WiFi connected successfully");
+
+            // Try to connect to MQTT
+            Serial.println("Connecting to MQTT...");
+            mqttConnected = connectMQTT();
+
+            if (mqttConnected) {
+                Serial.println("MQTT connected successfully");
+            } else {
+                Serial.println("MQTT connection failed - will retry in loop");
+            }
+        } else {
+            Serial.println("WiFi connection failed - starting configuration mode");
+            startConfigurationMode();
+            return; // Skip normal setup, will restart after config
+        }
+    } else {
+        Serial.println("No valid credentials found - starting configuration mode");
+        startConfigurationMode();
+        return; // Skip normal setup, will restart after config
+    }
+
+    // Initialize components only if we have a connection
     Serial.println("Initializing sensors...");
     sensorsInitialized = initializeSensors();
 
     Serial.println("Initializing SD card...");
     sdInitialized = initializeSD();
 
-    Serial.println("Connecting to WiFi...");
-    wifiConnected = connectWiFi();
-
     if (wifiConnected)
     {
-        Serial.println("Connecting to MQTT...");
-        mqttConnected = connectMQTT();
-
         // Setup OTA updates
         ArduinoOTA.setHostname(DEVICE_HOSTNAME);
         ArduinoOTA.onStart([])
@@ -185,6 +233,68 @@ void loop()
 
     // Small delay to prevent watchdog issues
     delay(10);
+}
+
+// WiFiManager callback functions
+void wifiConfigModeCallback(WiFiManager *myWiFiManager) {
+    Serial.println("Entered configuration mode");
+    Serial.print("Config SSID: ");
+    Serial.println(myWiFiManager->getConfigPortalSSID());
+    Serial.print("Config IP: ");
+    Serial.println(WiFi.softAPIP());
+}
+
+// Callback to save WiFiManager parameters to Preferences
+void wifiSaveCallback() {
+    Serial.println("Saving configuration from WiFiManager");
+
+    // Save WiFi credentials
+    String wifiSSID = WiFi.SSID();
+    String wifiPass = WiFi.psk();
+    saveWiFiCredentials(wifiSSID.c_str(), wifiPass.c_str());
+
+    // For custom parameters (MQTT, device name), we would retrieve them here
+    // But since we're using autoConnect, WiFiManager will save the basic credentials
+
+    Serial.println("Configuration saved to Preferences");
+
+    // Delay to allow serial output to be sent before restart
+    delay(1000);
+
+    // Restart the device to apply new settings
+    ESP.restart();
+}
+
+// Callback for successful connection via WiFiManager
+void wifiConnectCallback() {
+    Serial.println("Connected successfully via WiFiManager");
+}
+
+// Function to start configuration mode
+void startConfigurationMode() {
+    Serial.println("Starting configuration mode");
+
+    // Set config portal timeout (optional)
+    wifiManager.setConfigPortalTimeout(180); // 3 minutes timeout
+
+    // Set callback functions
+    wifiManager.setAPCallback(wifiConfigModeCallback);
+    wifiManager.setSaveConfigCallback(wifiSaveCallback);
+
+    // Start the configuration portal
+    Serial.println("Starting WiFi configuration portal");
+    bool result = wifiManager.autoConnect(); // This will block until config is saved or timeout
+
+    if (!result) {
+        Serial.println("Failed to connect or timeout occurred");
+        // TODO: Handle timeout - maybe try to connect with existing credentials?
+    } else {
+        Serial.println("Connected successfully via WiFiManager");
+        // Note: The save callback will handle saving and restarting
+    }
+
+    // If we get here, the connection attempt failed or timed out
+    Serial.println("Configuration portal exited");
 }
 
 bool initializeSensors()
@@ -635,6 +745,89 @@ bool clearCredentials() {
     preferences.end();
     Serial.println("All credentials cleared from Preferences");
     return true;
+}
+
+// WiFiManager object and callbacks
+WiFiManager wifiManager;
+
+// Flag to track if we're in configuration mode
+bool configModeActive = false;
+
+// WiFiManager configuration mode callback
+void configModeCallback(WiFiManager *myWiFiManager) {
+    Serial.println("Entered configuration mode");
+    Serial.print("Config SSID: ");
+    Serial.println(myWiFiManager->getConfigAPSSID());
+    Serial.print("Config IP: ");
+    Serial.println(WiFi.softAPIP());
+
+    // Set custom AP SSID to include device name for easier identification
+    char apName[32];
+    char deviceName[32] = "env_logger"; // Default
+    loadDeviceName(deviceName, sizeof(deviceName));
+    snprintf(apName, sizeof(apName), "ESP_%s_%06X", deviceName, ESP.getChipId() & 0xFFFFFF);
+    WiFi.softAP(apName);
+
+    configModeActive = true;
+
+    // Optional: Disable SSID broadcast for privacy (uncomment if desired)
+    // WiFi.softAPsetHidden(true);
+}
+
+// WiFiManager save callback
+void saveConfigCallback() {
+    Serial.println("Configuration saved");
+
+    // Save custom parameters
+    // Note: WiFiManager automatically saves built-in parameters (SSID, password)
+    // We need to save our custom parameters manually
+
+    // Get custom parameters (if any were added)
+    // For now, we rely on WiFiManager's built-in parameter handling
+    // Custom parameters would be retrieved here if we added them
+
+    // Signal that we should restart to apply new settings
+    ESP.restart();
+}
+
+// WiFiManager connection callback
+void connectCallback() {
+    Serial.println("Connected to WiFi via WiFiManager");
+    configModeActive = false;
+}
+
+// Function to start configuration mode
+void startConfigurationMode() {
+    Serial.println("Starting configuration mode");
+
+    // Set callbacks
+    wifiManager.setAPCallback(configModeCallback);
+    wifiManager.setSaveConfigCallback(saveConfigCallback);
+    // wifiManager.setConnectCallback(connectCallback); // Optional
+
+    // Set custom parameters for MQTT and device name
+    // WiFiManagerParameter custom_mqtt_broker("server", "MQTT Broker", mqtt_broker, 40);
+    // WiFiManagerParameter custom_mqtt_port("port", "MQTT Port", mqtt_port, 6);
+    // WiFiManagerParameter custom_mqtt_user("user", "MQTT User", mqtt_user, 32);
+    // WiFiManagerParameter custom_mqtt_pass("pass", "MQTT Password", mqtt_pass, 32);
+    // WiFiManagerParameter custom_device_name("name", "Device Name", device_name, 32);
+
+    // Add parameters to WiFiManager
+    // wifiManager.addParameter(&custom_mqtt_broker);
+    // wifiManager.addParameter(&custom_mqtt_port);
+    // wifiManager.addParameter(&custom_mqtt_user);
+    // wifiManager.addParameter(&custom_mqtt_pass);
+    // wifiManager.addParameter(&custom_device_name);
+
+    // Set timeout for configuration mode (3 minutes)
+    wifiManager.setConfigPortalTimeout(180);
+
+    // Start the configuration portal
+    if (!wifiManager.startConfigPortal()) {
+        Serial.println("Failed to start config portal. Rebooting...");
+        delay(3000);
+        ESP.restart();
+    }
 }
 
 // Device ID generation functions

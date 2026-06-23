@@ -1,3 +1,5 @@
 Task 1: complete (commits e572bd2..43747cc, review clean)
 Task 2: complete (commits 05cbc01, review clean)
-Task 3: in progress (commits 05cbc01..current - Device ID generation and topic functions implemented)
+Task 3: complete (commits 05cbc01..ed92e3f, review clean)
+Task 4: in progress (commits ed92e3f..current - Connection functions updated to use preferences)
+Task 5: in progress (commits current - WiFiManager integration started)
