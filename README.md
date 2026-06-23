@@ -97,7 +97,7 @@ Sketch → Include Library → Manage Libraries (search and install):
 ### 4. Configure & Upload
 ```bash
 # Clone this repo or download as ZIP
-git clone https://github.com/YOUR_USERNAME/mcu-env-logger.git
+git clone https://github.com/MatkoKardum/mcu-env-logger.git
 cd mcu-env-logger
 
 # Copy config template
